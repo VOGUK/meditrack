@@ -4,7 +4,7 @@
 
 Unlike complex medical software, MediTrack is built specifically for home use—ensuring family members stay synced, medicines stay in date, and you never run out of essentials.
 
-It can be installed to any web host including shared web hosting. 
+It is fully mobile responsive and can be installed on any web host including shared web hosting. 
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![PHP](https://img.shields.io/badge/php-%3E%3D%208.0-777bb4.svg)

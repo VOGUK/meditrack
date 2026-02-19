@@ -196,11 +196,10 @@ function updateTextSize(c) { let s = parseInt(getComputedStyle(document.document
 document.getElementById('textIncBtn')?.addEventListener('click', () => updateTextSize(2));
 document.getElementById('textDecBtn')?.addEventListener('click', () => updateTextSize(-2));
 
-document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault(); 
-    const fd = new FormData(e.target); 
+document.getElementById('loginForm')?.addEventListener('submit', async (evt) => {
+    evt.preventDefault(); 
+    const fd = new FormData(evt.target); 
     fd.append('action', 'login');
-    // Note: Form already has csrf_token input field
     const res = await fetch(API, {method:'POST', body:fd}).then(r=>r.json());
     if(res.status === 'success') location.reload(); else document.getElementById('loginError').innerText = res.message;
 });
@@ -250,7 +249,7 @@ async function renderInventory(c){
                 <option value="name">A-Z</option>
                 <option value="expiry">Expiration</option>
                 <optgroup label="Filter by Family Member">
-                    ${fam.map(f => `<option value="${e(f.name)}">${e(f.name)}</option>`).join('')}
+                    ${Array.isArray(fam) ? fam.map(f => `<option value="${e(f.name)}">${e(f.name)}</option>`).join('') : ''}
                 </optgroup>
             </select>
             <select id="invFilter" onchange="loadInv()">
@@ -274,7 +273,7 @@ async function loadInv(){
     
     document.getElementById('invList').innerHTML = list.map(i => `
         <div class="list-item">
-            <div><strong>${e(i.name)}</strong> <small>(${e(i.code)})</small><br><small>For: ${e(i.owner)||'?'} | ${e(i.location)} | ${e(i.expiry_date)}</small></div>
+            <div><strong>${e(i.name)} ${i.strength ? `${e(i.strength)}` : ''}</strong> <small>(${e(i.code)})</small><br><small>For: ${e(i.owner)||'?'} | ${e(i.location)} | Expiry: ${e(i.expiry_date)}</small></div>
             <div><button class="btn-sm btn-outline" onclick="updateStatus(${i.id},'in_use')">Use</button> <button class="btn-sm btn-outline" onclick="updateStatus(${i.id},'trash')">🗑</button></div>
         </div>`).join('');
 }
@@ -307,9 +306,12 @@ async function renderMyMeds(c){
     c.innerHTML = `<h2>My Medications</h2>
         <div class="card">
             <div class="autocomplete-wrapper"><input type="text" id="myMedName" placeholder="Type to search and add" autocomplete="off"><div class="autocomplete-list" id="myMedList"></div></div>
+            
+            <input type="text" id="myMedStrength" placeholder="Strength (e.g. 500mg)" style="margin-top:10px; width: 100%; box-sizing: border-box;">
+            
             <div style="margin-top:10px;">
                 <label>For:</label>
-                <select id="myMedOwner">${fam.map(f => `<option value="${e(f.name)}" ${f.is_default?'selected':''}>${e(f.name)}</option>`).join('')}</select>
+                <select id="myMedOwner">${Array.isArray(fam) ? fam.map(f => `<option value="${e(f.name)}" ${f.is_default?'selected':''}>${e(f.name)}</option>`).join('') : ''}</select>
             </div>
             <button class="btn" style="margin-top:10px;" onclick="addMyMed()">Add to List</button>
         </div>
@@ -321,14 +323,23 @@ async function loadMyMeds(){
     const res = await callApi('get_mymeds');
     document.getElementById('activeMyMeds').innerHTML = res.active.map(i => `
         <div class="list-item ${i.stock_count < 1 ? 'low' : ''}">
-            <div><strong>${e(i.name)}</strong> (${e(i.owner)})<br><small>Stock: ${i.stock_count}</small></div>
+            <div><strong>${e(i.name)} ${i.strength ? `${e(i.strength)}` : ''}</strong> (${e(i.owner)})<br><small>Stock: ${i.stock_count}</small></div>
             <div>${i.stock_count < 1 ? `<button class="btn-sm btn" onclick="openOrderModal(${i.id})">Order</button>` : ''} <button class="btn-sm btn-danger" onclick="delMyMed(${i.id})">Del</button></div>
         </div>`).join('');
     document.getElementById('orderedMyMeds').innerHTML = res.ordered.map(i => `
-        <div class="list-item"><div><strong>${e(i.name)}</strong> (${e(i.owner)})<br><small>Ordered: ${e(i.last_ordered_date)}</small></div>
+        <div class="list-item"><div><strong>${e(i.name)} ${i.strength ? `${e(i.strength)}` : ''}</strong> (${e(i.owner)})<br><small>Ordered: ${e(i.last_ordered_date)}</small></div>
         <div><button class="btn-sm btn-outline" onclick="receiveMyMed(${i.id}, '${e(i.name).replace(/'/g, "\\'")}')">Received</button></div></div>`).join('');
 }
-async function addMyMed(){ await callApi('add_mymed', {name: document.getElementById('myMedName').value, owner: document.getElementById('myMedOwner').value}); loadMyMeds(); document.getElementById('myMedName').value=''; }
+async function addMyMed(){ 
+    await callApi('add_mymed', {
+        name: document.getElementById('myMedName').value, 
+        owner: document.getElementById('myMedOwner').value,
+        strength: document.getElementById('myMedStrength').value
+    }); 
+    loadMyMeds(); 
+    document.getElementById('myMedName').value=''; 
+    document.getElementById('myMedStrength').value=''; 
+}
 function openOrderModal(id){ document.getElementById('orderId').value = id; document.getElementById('orderDate').valueAsDate = new Date(); document.getElementById('orderModal').classList.add('open'); }
 async function confirmOrder(){ await callApi('mark_ordered', {id: document.getElementById('orderId').value, date: document.getElementById('orderDate').value}); closeModal('orderModal'); loadMyMeds(); }
 async function receiveMyMed(id, name){ await callApi('mymed_received', {id:id}); openAddModal(); document.getElementById('addName').value = name; loadMyMeds(); }
@@ -356,7 +367,7 @@ async function renderSystem(c){
     const user = await callApi('get_user_info');
     const sc = await callApi('get_share_code');
     
-    c.innerHTML = `<h2>System</h2>
+    let html = `<h2>System</h2>
         <div class="card"><h3>Share Access</h3>
             <p>Share this code to allow others to view/edit this data.</p>
             <div class="copy-group">
@@ -388,7 +399,7 @@ async function renderSystem(c){
         </div>`;
     
     if(currentUserRole === 'admin'){
-        c.innerHTML += `<div class="card"><h3>User Management (Admin)</h3>
+        html += `<div class="card"><h3>User Management (Admin)</h3>
             <div class="flex-between">
                 <input type="text" id="newUsername" placeholder="Username" style="width:30%">
                 <input type="password" id="newUserPass" placeholder="Password" style="width:30%">
@@ -397,11 +408,15 @@ async function renderSystem(c){
             </div>
             <div id="userList" style="margin-top:10px;"></div>
         </div>`;
-        setTimeout(loadUsers, 100);
     }
-    c.innerHTML += `<div class="card"><h3>Data Management</h3><button class="btn" onclick="downloadBackup()">Download JSON Backup</button><hr><div class="flex-between"><input type="file" id="restoreFile"><button class="btn" onclick="restoreBackup()">Restore JSON</button></div></div>`;
     
-    setTimeout(loadFamily, 100); setTimeout(loadLocations, 100);
+    html += `<div class="card"><h3>Data Management</h3><button class="btn" onclick="downloadBackup()">Download JSON Backup</button><hr><div class="flex-between"><input type="file" id="restoreFile"><button class="btn" onclick="restoreBackup()">Restore JSON</button></div></div>`;
+    
+    c.innerHTML = html;
+    
+    loadFamily();
+    loadLocations();
+    if(currentUserRole === 'admin') loadUsers();
 }
 
 function copyShareCode() {
@@ -429,30 +444,59 @@ async function updateFullName(){ await callApi('update_fullname', {fullname: doc
 
 async function loadFamily(){
     const list = await callApi('get_family');
+    if(!Array.isArray(list)) return;
     document.getElementById('famList').innerHTML = list.map(f => `
         <div class="list-item">
             <div>${e(f.name)} ${f.is_default?'(Default)':''}</div>
             <div>${!f.is_default ? `<button class="btn-sm btn-outline" onclick="setDefaultFam(${f.id})">Set Default</button>` : ''} <button class="btn-sm btn-danger" onclick="delFam(${f.id})">Del</button></div>
         </div>`).join('');
 }
-async function addFamily(){ await callApi('add_family', {name: document.getElementById('newFamName').value}); loadFamily(); }
+
+async function addFamily(){ 
+    const val = document.getElementById('newFamName').value.trim();
+    if (!val) return showAlert("Please enter a name.");
+    
+    const res = await callApi('add_family', {name: val}); 
+    if (res.status === 'error') {
+        return showAlert(res.message, "Failed to Add");
+    }
+    
+    document.getElementById('newFamName').value = ''; 
+    loadFamily(); 
+}
+
 async function delFam(id){ showConfirm('Delete?', async () => { await callApi('delete_family', {id:id}); loadFamily(); }); }
 async function setDefaultFam(id){ await callApi('set_default_family', {id:id}); loadFamily(); }
 
 async function loadLocations(){
     const list = await callApi('get_locations');
+    if(!Array.isArray(list)) return;
     document.getElementById('locList').innerHTML = list.map(l => `
         <div class="list-item">
             <div>${e(l.name)} ${l.is_default?'(Default)':''}</div>
             <div>${!l.is_default ? `<button class="btn-sm btn-outline" onclick="setDefaultLoc(${l.id})">Set Default</button>` : ''} <button class="btn-sm btn-danger" onclick="delLoc(${l.id})">Del</button></div>
         </div>`).join('');
 }
-async function addLoc(){ await callApi('add_location', {name: document.getElementById('newLocName').value}); loadLocations(); }
+
+async function addLoc(){ 
+    const val = document.getElementById('newLocName').value.trim();
+    if (!val) return showAlert("Please enter a location name.");
+    
+    const res = await callApi('add_location', {name: val}); 
+    if (res.status === 'error') {
+        return showAlert(res.message, "Failed to Add");
+    }
+    
+    document.getElementById('newLocName').value = ''; 
+    loadLocations(); 
+}
+
 async function delLoc(id){ await callApi('delete_location', {id:id}); loadLocations(); }
 async function setDefaultLoc(id){ await callApi('set_default_location', {id:id}); loadLocations(); }
 
 async function loadUsers(){
     const users = await callApi('get_users');
+    if(!Array.isArray(users)) return;
     document.getElementById('userList').innerHTML = users.map(u => `
         <div class="list-item">
             <div><strong>${e(u.username)}</strong> (${e(u.role)}) - ${e(u.fullname||'')}</div>
@@ -462,7 +506,7 @@ async function loadUsers(){
             </div>
         </div>`).join('');
 }
-async function addUser(){ await callApi('add_user', {username: document.getElementById('newUsername').value, password: document.getElementById('newUserPass').value, role: document.getElementById('newUserRole').value}); loadUsers(); }
+async function addUser(){ await callApi('add_user', {username: document.getElementById('newUsername').value, password: document.getElementById('newUserPass').value, role: document.getElementById('newUserRole').value}); document.getElementById('newUsername').value=''; document.getElementById('newUserPass').value=''; loadUsers(); }
 async function delUser(id){ showConfirm('Delete?', async () => { await callApi('delete_user', {id:id}); loadUsers(); }); }
 
 let resetUserId = null;
@@ -472,33 +516,75 @@ async function confirmResetPass() { const p = document.getElementById('resetPass
 async function downloadBackup(){ const data = await callApi('backup_json'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type: 'application/json'})); a.download = 'meditrack_backup.json'; a.click(); }
 async function restoreBackup(){ const f = document.getElementById('restoreFile').files[0]; if(!f) return; const fd = new FormData(); fd.append('action', 'restore_json'); fd.append('csrf_token', CSRF_TOKEN); fd.append('file', f); await fetch(API, {method:'POST', body:fd}); showAlert('Restored!'); location.reload(); }
 
+// --- REBUILT AUTOCOMPLETE ENGINE ---
 function setupAutocomplete(input, list) {
-    input.addEventListener('input', async (e) => {
-        const val = e.target.value;
-        if(val.length < 2) { list.style.display = 'none'; return; }
-        const res = await callApi('master_search', {term: val});
-        if(res.length > 0) {
-            list.innerHTML = res.map(i => `<div><strong>${e(i.name)}</strong> <small>(Stock: ${i.count})</small></div>`).join('');
-            list.style.display = 'block';
-            list.querySelectorAll('div').forEach(div => {
-                div.addEventListener('click', () => { input.value = div.querySelector('strong').innerText; list.style.display = 'none'; });
-            });
-        } else { list.style.display = 'none'; }
+    if(!input || input.dataset.acSetup) return;
+    input.dataset.acSetup = true;
+
+    let debounceTimer;
+    input.addEventListener('input', (evt) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            const val = evt.target.value;
+            if(val.length < 2) { list.style.display = 'none'; return; }
+            
+            const res = await callApi('master_search', {term: val});
+            if(res && res.length > 0) {
+                list.innerHTML = res.map(i => `<div><strong>${e(i.name)}</strong> <small>(Stock: ${i.count})</small></div>`).join('');
+                list.style.display = 'block';
+                list.querySelectorAll('div').forEach(div => {
+                    div.addEventListener('click', () => { 
+                        input.value = div.querySelector('strong').innerText; 
+                        list.style.display = 'none'; 
+                    });
+                });
+            } else { 
+                list.style.display = 'none'; 
+            }
+        }, 200);
     });
-    document.addEventListener('click', (e) => { if(e.target !== input) list.style.display = 'none'; });
 }
 
-function openAddModal(){
+document.addEventListener('click', (evt) => {
+    document.querySelectorAll('.autocomplete-list').forEach(list => {
+        const wrapper = list.closest('.autocomplete-wrapper');
+        const input = wrapper ? wrapper.querySelector('input') : null;
+        if (input && evt.target !== input && !list.contains(evt.target)) {
+            list.style.display = 'none';
+        }
+    });
+});
+
+// --- BULLETPROOF ADD MODAL ---
+async function openAddModal(){
+    // 1. Wipe the form completely clean of previous entries
+    document.getElementById('addStockForm').reset();
+    
+    // 2. Open the modal instantly so it feels responsive
     document.getElementById('addItemModal').classList.add('open');
     setupAutocomplete(document.getElementById('addName'), document.getElementById('addNameList'));
-    callApi('get_locations').then(locs => { document.getElementById('locationSelect').innerHTML = locs.map(l => `<option value="${e(l.name)}" ${l.is_default?'selected':''}>${e(l.name)}</option>`).join(''); });
-    callApi('get_family').then(fam => { document.getElementById('addOwnerSelect').innerHTML = fam.map(f => `<option value="${e(f.name)}" ${f.is_default?'selected':''}>${e(f.name)}</option>`).join(''); });
+    
+    // 3. Put a temporary loading message in the dropdowns 
+    document.getElementById('locationSelect').innerHTML = '<option>Loading...</option>';
+    document.getElementById('addOwnerSelect').innerHTML = '<option>Loading...</option>';
+
+    // 4. Safely AWAIT the locations data before drawing the box
+    const locs = await callApi('get_locations');
+    if (Array.isArray(locs)) {
+        document.getElementById('locationSelect').innerHTML = locs.map(l => `<option value="${e(l.name)}" ${l.is_default?'selected':''}>${e(l.name)}</option>`).join('');
+    }
+
+    // 5. Safely AWAIT the family data before drawing the box
+    const fam = await callApi('get_family');
+    if (Array.isArray(fam)) {
+        document.getElementById('addOwnerSelect').innerHTML = fam.map(f => `<option value="${e(f.name)}" ${f.is_default?'selected':''}>${e(f.name)}</option>`).join('');
+    }
 }
-document.getElementById('addStockForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault(); 
-    // We construct the object manually to pass to callApi for CSRF injection
+
+document.getElementById('addStockForm')?.addEventListener('submit', async (evt) => {
+    evt.preventDefault(); 
     const data = {};
-    new FormData(e.target).forEach((value, key) => data[key] = value);
+    new FormData(evt.target).forEach((value, key) => data[key] = value);
     const res = await callApi('add_inventory', data);
     if(res.status === 'success'){ showAlert('Added! Code: ' + res.code); closeModal('addItemModal'); loadPage('inventory'); } else { showAlert(res.message); }
 });

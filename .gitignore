@@ -1,0 +1,9 @@
+# Ignore the SQLite database files (Personal Data)
+*.sqlite
+*.db
+
+# Ignore any database migration scripts
+migrate.php
+
+# Ignore JSON backups
+*.json

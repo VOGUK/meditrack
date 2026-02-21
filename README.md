@@ -1,4 +1,4 @@
-# 💊 MediTrack
+# MediTrack
 
 **MediTrack** is a secure, privacy-focused web application designed for households to manage medication inventory, track expiration dates, and simplify the reordering process.
 

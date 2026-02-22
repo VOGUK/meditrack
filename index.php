@@ -34,7 +34,7 @@ $userRole = $_SESSION['role'] ?? 'user';
         
         .nav-links { flex: 2; display: flex; justify-content: center; gap: 8px; }
         
-        /* Premium Menu Styling (Removed underline, added pill shape) */
+        /* Premium Menu Styling */
         .nav-links button { 
             border: none; 
             background: transparent; 
@@ -46,7 +46,7 @@ $userRole = $_SESSION['role'] ?? 'user';
             text-decoration: none !important;
         }
         .nav-links button.active { 
-            background-color: #e3f2fd; /* Light blue background */
+            background-color: #e3f2fd; 
             color: var(--primary, #4a90e2); 
             font-weight: bold; 
         }
@@ -55,22 +55,30 @@ $userRole = $_SESSION['role'] ?? 'user';
         .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; }
         .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
         
-        /* Mobile: Scrollable Horizontal Menu */
+        /* STRICT Mobile Layout for Perfect Horizontal Scrolling */
         @media (max-width: 850px) {
-            nav { padding: 10px; }
+            nav { padding: 10px; flex-wrap: wrap; }
+            .logo-box { flex: 1 1 auto; }
+            .nav-controls { flex: 1 1 auto; justify-content: flex-end; }
             .nav-links { 
-                width: 100%; 
+                flex: 0 0 100%; /* Forces the menu to its own full-width row */
                 order: 3; 
+                display: flex;
+                flex-direction: row; /* Strictly horizontal */
+                flex-wrap: nowrap; /* Prevents vertical stacking */
                 justify-content: flex-start; 
-                overflow-x: auto; 
-                padding-top: 15px; 
+                overflow-x: auto; /* Enables swiping left/right */
+                padding-top: 12px; 
                 padding-bottom: 5px;
+                margin-top: 10px;
+                border-top: 1px solid #eee; /* Clean separator line */
                 -webkit-overflow-scrolling: touch; 
                 scrollbar-width: none; 
+                gap: 8px;
             }
             .nav-links::-webkit-scrollbar { display: none; }
-            .nav-links button { white-space: nowrap; flex-shrink: 0; }
-            .logo-box, .nav-controls { flex: auto; }
+            .nav-links button { white-space: nowrap; flex-shrink: 0; /* Prevents buttons from squishing */ }
+            body.dark-mode .nav-links { border-top-color: #333; }
         }
 
         /* Autocomplete Styles */
@@ -87,7 +95,7 @@ $userRole = $_SESSION['role'] ?? 'user';
         body.dark-mode .list-item { border-bottom-color: #333; }
         body.dark-mode .autocomplete-list { background-color: #333; border-color: #555; }
         body.dark-mode .autocomplete-item:hover { background-color: #444; border-bottom-color: #555; }
-        body.dark-mode .nav-links button.active { background-color: #3a3a3a; color: #6fb3ff; } /* Dark mode active pill */
+        body.dark-mode .nav-links button.active { background-color: #3a3a3a; color: #6fb3ff; }
         body.dark-mode .icon { fill: #e0e0e0; }
     </style>
 </head>
@@ -452,7 +460,6 @@ async function renderMyMeds(c) {
     const fam = await callApi('get_family');
     const meds = await callApi('get_mymeds');
     
-    // Combining the active and ordered items into one visually separated display
     c.innerHTML = `
         <h2>My Medications</h2>
         <div class="card">
@@ -509,7 +516,6 @@ async function openAddModal() {
     const meds = await callApi('get_mymeds');
     let medOptions = '<option value="">Select a medication...</option>';
     
-    // We combine active AND ordered so users can select an ordered med when it finally arrives
     const allMeds = meds.active.concat(meds.ordered);
     allMeds.forEach(m => {
         medOptions += `<option value="${e(m.name)}" data-str="${e(m.strength)}" data-owner="${e(m.owner)}">${e(m.name)} ${e(m.strength)} (${e(m.owner)})</option>`;
@@ -603,11 +609,9 @@ async function genReport(type) {
     const { jsPDF } = window.jspdf; 
     const doc = new jsPDF();
     
-    // Formatting the current date as DD/MM/YYYY
     const d = new Date();
     const dateFormatted = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
     
-    // AutoTable Footer hook to add page number and date
     const drawFooter = function(data) {
         const pageCount = doc.internal.getNumberOfPages();
         doc.setFontSize(10);

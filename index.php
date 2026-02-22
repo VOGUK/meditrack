@@ -23,11 +23,10 @@ $userRole = $_SESSION['role'] ?? 'user';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* Modernized Navigation Layout */
+        /* Modernized Navigation Layout - Desktop */
         nav { 
             display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; flex-wrap: wrap;
-            box-sizing: border-box;
+            padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd;
         }
         .logo-box { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 10px; font-family: sans-serif; min-width: max-content; }
         .logo-box img { width: 35px; height: 35px; }
@@ -45,7 +44,7 @@ $userRole = $_SESSION['role'] ?? 'user';
             font-size: 1rem;
             transition: all 0.2s ease;
             text-decoration: none !important;
-            white-space: nowrap; /* Ensures text never gets cut or wrapped */
+            white-space: nowrap; /* Ensures text never gets cut */
         }
         .nav-links button.active { 
             background-color: #e3f2fd; 
@@ -53,38 +52,40 @@ $userRole = $_SESSION['role'] ?? 'user';
             font-weight: bold; 
         }
 
-        .nav-controls { flex: 1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; flex-wrap: nowrap; }
-        .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .nav-controls { flex: 1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+        .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; }
         .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
         
-        /* STRICT Mobile Layout */
+        /* BULLETPROOF MOBILE LAYOUT USING CSS GRID */
         @media (max-width: 850px) {
-            nav { padding: 10px; flex-wrap: wrap; gap: 10px 0; }
-            /* Row 1: Logo (Left) and Controls (Right) */
-            .logo-box { flex: 1 1 40%; min-width: 0; }
-            .nav-controls { flex: 1 1 60%; justify-content: flex-end; }
+            nav { 
+                display: grid; 
+                grid-template-columns: 1fr auto; /* Col 1: Logo, Col 2: Icons */
+                grid-template-rows: auto auto;   /* Row 1: Header, Row 2: Menu */
+                padding: 10px 0 0 0; 
+                gap: 10px 0;
+            }
+            .logo-box { grid-column: 1; grid-row: 1; padding-left: 15px; }
+            .nav-controls { grid-column: 2; grid-row: 1; padding-right: 15px; }
             
-            /* Row 2: Menu Items (Full Width Bottom) */
             .nav-links { 
-                flex: 0 0 100%; 
-                order: 3; 
+                grid-column: 1 / -1; /* Forces menu to span across the entire bottom row */
+                grid-row: 2;
                 display: flex;
                 flex-direction: row;
                 flex-wrap: nowrap;
                 justify-content: flex-start; 
                 overflow-x: auto; 
-                padding-top: 15px; 
-                padding-bottom: 5px;
+                padding: 10px 15px; 
                 border-top: 1px solid #eee; 
                 -webkit-overflow-scrolling: touch; 
-                scrollbar-width: none; /* Firefox */
+                scrollbar-width: none; 
             }
-            .nav-links::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+            .nav-links::-webkit-scrollbar { display: none; }
             .nav-links button { 
-                flex: 0 0 auto; /* Forces buttons to keep their shape */
-                margin-right: 8px; 
+                flex-shrink: 0; /* Prevents text from squishing */
+                margin-right: 10px; 
             }
-            .nav-links button:last-child { margin-right: 0; }
             body.dark-mode .nav-links { border-top-color: #333; }
         }
 

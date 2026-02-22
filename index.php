@@ -27,6 +27,7 @@ $userRole = $_SESSION['role'] ?? 'user';
         nav { 
             display: flex; justify-content: space-between; align-items: center; 
             padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; flex-wrap: wrap;
+            box-sizing: border-box;
         }
         .logo-box { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 10px; font-family: sans-serif; min-width: max-content; }
         .logo-box img { width: 35px; height: 35px; }
@@ -55,29 +56,34 @@ $userRole = $_SESSION['role'] ?? 'user';
         .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; }
         .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
         
-        /* STRICT Mobile Layout for Perfect Horizontal Scrolling */
+        /* FAIL-PROOF Mobile Layout for Perfect Horizontal Scrolling */
         @media (max-width: 850px) {
-            nav { padding: 10px; flex-wrap: wrap; }
-            .logo-box { flex: 1 1 auto; }
-            .nav-controls { flex: 1 1 auto; justify-content: flex-end; }
+            nav { padding: 10px 0; } /* Remove side padding from the main nav */
+            .logo-box { padding-left: 15px; flex: auto; }
+            .nav-controls { padding-right: 15px; flex: auto; }
             .nav-links { 
-                flex: 0 0 100%; /* Forces the menu to its own full-width row */
+                width: 100%; 
                 order: 3; 
                 display: flex;
-                flex-direction: row; /* Strictly horizontal */
-                flex-wrap: nowrap; /* Prevents vertical stacking */
+                flex-direction: row;
+                flex-wrap: nowrap;
                 justify-content: flex-start; 
-                overflow-x: auto; /* Enables swiping left/right */
-                padding-top: 12px; 
+                overflow-x: auto; 
+                padding: 15px; 
                 padding-bottom: 5px;
                 margin-top: 10px;
-                border-top: 1px solid #eee; /* Clean separator line */
+                border-top: 1px solid #eee; 
                 -webkit-overflow-scrolling: touch; 
                 scrollbar-width: none; 
-                gap: 8px;
+                box-sizing: border-box;
             }
             .nav-links::-webkit-scrollbar { display: none; }
-            .nav-links button { white-space: nowrap; flex-shrink: 0; /* Prevents buttons from squishing */ }
+            .nav-links button { 
+                white-space: nowrap; 
+                flex: 0 0 auto; /* Forces buttons to keep their shape */
+                margin-right: 10px; /* Space between buttons */
+            }
+            .nav-links button:last-child { margin-right: 0; }
             body.dark-mode .nav-links { border-top-color: #333; }
         }
 

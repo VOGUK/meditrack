@@ -44,7 +44,7 @@ $userRole = $_SESSION['role'] ?? 'user';
             font-size: 1rem;
             transition: all 0.2s ease;
             text-decoration: none !important;
-            white-space: nowrap; /* Ensures text never gets cut */
+            white-space: nowrap; 
         }
         .nav-links button.active { 
             background-color: #e3f2fd; 
@@ -56,35 +56,43 @@ $userRole = $_SESSION['role'] ?? 'user';
         .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; }
         .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
         
-        /* BULLETPROOF MOBILE LAYOUT USING CSS GRID */
+        /* BULLETPROOF MOBILE LAYOUT - NO FLEXBOX FOR THE SCROLLING CONTAINER */
         @media (max-width: 850px) {
             nav { 
-                display: grid; 
-                grid-template-columns: 1fr auto; /* Col 1: Logo, Col 2: Icons */
-                grid-template-rows: auto auto;   /* Row 1: Header, Row 2: Menu */
-                padding: 10px 0 0 0; 
-                gap: 10px 0;
+                display: flex; 
+                flex-wrap: wrap; 
+                padding: 0; /* Remove default padding to control exactly where it goes */
             }
-            .logo-box { grid-column: 1; grid-row: 1; padding-left: 15px; }
-            .nav-controls { grid-column: 2; grid-row: 1; padding-right: 15px; }
+            .logo-box { 
+                width: 50%; 
+                flex: unset; 
+                padding: 10px 0 10px 15px; 
+                box-sizing: border-box; 
+            }
+            .nav-controls { 
+                width: 50%; 
+                flex: unset; 
+                justify-content: flex-end; 
+                padding: 10px 15px 10px 0; 
+                box-sizing: border-box; 
+            }
             
             .nav-links { 
-                grid-column: 1 / -1; /* Forces menu to span across the entire bottom row */
-                grid-row: 2;
-                display: flex;
-                flex-direction: row;
-                flex-wrap: nowrap;
-                justify-content: flex-start; 
-                overflow-x: auto; 
+                width: 100%; 
+                flex: unset;
+                order: 3; /* Forces it below the logo and controls */
+                display: block; /* Standard block layout, completely bypasses flexbox bugs */
+                white-space: nowrap; /* Forces everything onto one line */
+                overflow-x: auto; /* Adds horizontal scroll */
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
                 padding: 10px 15px; 
                 border-top: 1px solid #eee; 
-                -webkit-overflow-scrolling: touch; 
-                scrollbar-width: none; 
+                box-sizing: border-box; 
             }
             .nav-links::-webkit-scrollbar { display: none; }
             .nav-links button { 
-                flex-shrink: 0; /* Prevents text from squishing */
-                margin-right: 10px; 
+                display: inline-block; /* Keeps them in a row inside the block */
+                margin-right: 8px; 
             }
             body.dark-mode .nav-links { border-top-color: #333; }
         }

@@ -45,6 +45,7 @@ $userRole = $_SESSION['role'] ?? 'user';
             font-size: 1rem;
             transition: all 0.2s ease;
             text-decoration: none !important;
+            white-space: nowrap; /* Ensures text never gets cut or wrapped */
         }
         .nav-links button.active { 
             background-color: #e3f2fd; 
@@ -52,36 +53,36 @@ $userRole = $_SESSION['role'] ?? 'user';
             font-weight: bold; 
         }
 
-        .nav-controls { flex: 1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
-        .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; }
+        .nav-controls { flex: 1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; flex-wrap: nowrap; }
+        .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
         
-        /* FAIL-PROOF Mobile Layout for Perfect Horizontal Scrolling */
+        /* STRICT Mobile Layout */
         @media (max-width: 850px) {
-            nav { padding: 10px 0; } /* Remove side padding from the main nav */
-            .logo-box { padding-left: 15px; flex: auto; }
-            .nav-controls { padding-right: 15px; flex: auto; }
+            nav { padding: 10px; flex-wrap: wrap; gap: 10px 0; }
+            /* Row 1: Logo (Left) and Controls (Right) */
+            .logo-box { flex: 1 1 40%; min-width: 0; }
+            .nav-controls { flex: 1 1 60%; justify-content: flex-end; }
+            
+            /* Row 2: Menu Items (Full Width Bottom) */
             .nav-links { 
-                width: 100%; 
+                flex: 0 0 100%; 
                 order: 3; 
                 display: flex;
                 flex-direction: row;
                 flex-wrap: nowrap;
                 justify-content: flex-start; 
                 overflow-x: auto; 
-                padding: 15px; 
+                padding-top: 15px; 
                 padding-bottom: 5px;
-                margin-top: 10px;
                 border-top: 1px solid #eee; 
                 -webkit-overflow-scrolling: touch; 
-                scrollbar-width: none; 
-                box-sizing: border-box;
+                scrollbar-width: none; /* Firefox */
             }
-            .nav-links::-webkit-scrollbar { display: none; }
+            .nav-links::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
             .nav-links button { 
-                white-space: nowrap; 
                 flex: 0 0 auto; /* Forces buttons to keep their shape */
-                margin-right: 10px; /* Space between buttons */
+                margin-right: 8px; 
             }
             .nav-links button:last-child { margin-right: 0; }
             body.dark-mode .nav-links { border-top-color: #333; }

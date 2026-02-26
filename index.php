@@ -23,78 +23,83 @@ $userRole = $_SESSION['role'] ?? 'user';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        /* Modernized Navigation Layout - Desktop */
+        /* Base Navigation Styling */
         nav { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd;
+            background: #fff; 
+            border-bottom: 1px solid #ddd;
+            padding: 15px 20px;
         }
-        .logo-box { flex: 1; display: flex; align-items: center; justify-content: flex-start; gap: 10px; font-family: sans-serif; min-width: max-content; }
+        
+        /* Logo (Left) */
+        .logo-box { display: flex; align-items: center; gap: 10px; }
         .logo-box img { width: 35px; height: 35px; }
-        .logo-box h2 { margin: 0; color: var(--primary, #4a90e2); font-weight: 700; font-size: 1.2rem; }
+        .logo-box h2 { margin: 0; color: #4a90e2; font-size: 1.2rem; font-family: sans-serif; white-space: nowrap; }
         
-        .nav-links { flex: 2; display: flex; justify-content: center; gap: 8px; }
-        
-        /* Premium Menu Styling */
-        .nav-links button { 
-            border: none; 
+        /* Controls (Right) */
+        .nav-controls { display: flex; gap: 10px; align-items: center; }
+        .nav-controls button { 
             background: transparent; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            padding: 6px; 
             cursor: pointer; 
-            padding: 8px 14px; 
-            border-radius: 20px; 
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            text-decoration: none !important;
-            white-space: nowrap; 
-        }
-        .nav-links button.active { 
-            background-color: #e3f2fd; 
-            color: var(--primary, #4a90e2); 
-            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            color: inherit;
         }
 
-        .nav-controls { flex: 1; display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
-        .nav-controls button { padding: 6px; display: flex; align-items: center; justify-content: center; }
-        .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
-        
-        /* BULLETPROOF MOBILE LAYOUT - NO FLEXBOX FOR THE SCROLLING CONTAINER */
+        /* Simple Text Menu (Center) */
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        .nav-links button {
+            background: transparent;
+            border: none;
+            color: #555;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 5px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .nav-links button:hover { color: #4a90e2; }
+        .nav-links button.active {
+            color: #4a90e2;
+            font-weight: bold;
+            border-bottom: 2px solid #4a90e2;
+        }
+
+        /* Desktop Layout: 1 Row (Left, Center, Right) */
+        @media (min-width: 851px) {
+            nav {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                align-items: center;
+            }
+            .logo-box { justify-self: start; }
+            .nav-links { justify-self: center; }
+            .nav-controls { justify-self: end; }
+        }
+
+        /* Mobile Layout: 2 Rows (Logo/Icons Top, Menu Bottom Centered) */
         @media (max-width: 850px) {
-            nav { 
-                display: flex; 
-                flex-wrap: wrap; 
-                padding: 0; /* Remove default padding to control exactly where it goes */
+            nav {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px 0;
             }
-            .logo-box { 
-                width: 50%; 
-                flex: unset; 
-                padding: 10px 0 10px 15px; 
-                box-sizing: border-box; 
+            .logo-box { grid-column: 1; justify-self: start; }
+            .nav-controls { grid-column: 2; justify-self: end; }
+            .nav-links {
+                grid-column: 1 / -1;
+                justify-self: center;
+                display: flex;
+                flex-wrap: wrap; /* Allows text links to stack cleanly if the screen is very small */
+                justify-content: center;
+                gap: 10px 15px;
             }
-            .nav-controls { 
-                width: 50%; 
-                flex: unset; 
-                justify-content: flex-end; 
-                padding: 10px 15px 10px 0; 
-                box-sizing: border-box; 
-            }
-            
-            .nav-links { 
-                width: 100%; 
-                flex: unset;
-                order: 3; /* Forces it below the logo and controls */
-                display: block; /* Standard block layout, completely bypasses flexbox bugs */
-                white-space: nowrap; /* Forces everything onto one line */
-                overflow-x: auto; /* Adds horizontal scroll */
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-                padding: 10px 15px; 
-                border-top: 1px solid #eee; 
-                box-sizing: border-box; 
-            }
-            .nav-links::-webkit-scrollbar { display: none; }
-            .nav-links button { 
-                display: inline-block; /* Keeps them in a row inside the block */
-                margin-right: 8px; 
-            }
-            body.dark-mode .nav-links { border-top-color: #333; }
         }
 
         /* Autocomplete Styles */
@@ -104,15 +109,19 @@ $userRole = $_SESSION['role'] ?? 'user';
         .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
         .autocomplete-item:hover { background: #f0f0f0; }
 
-        /* Robust Dark Mode Fallbacks */
+        /* Dark Mode */
         body.dark-mode { background-color: #121212; color: #e0e0e0; }
-        body.dark-mode nav, body.dark-mode .card, body.dark-mode .modal-content { background-color: #1e1e1e; color: #e0e0e0; border-color: #333; }
+        body.dark-mode nav, body.dark-mode .card, body.dark-mode .modal-content { background-color: #1e1e1e; border-color: #333; }
         body.dark-mode input, body.dark-mode select, body.dark-mode textarea { background-color: #333; color: #fff; border-color: #555; }
         body.dark-mode .list-item { border-bottom-color: #333; }
         body.dark-mode .autocomplete-list { background-color: #333; border-color: #555; }
         body.dark-mode .autocomplete-item:hover { background-color: #444; border-bottom-color: #555; }
-        body.dark-mode .nav-links button.active { background-color: #3a3a3a; color: #6fb3ff; }
+        body.dark-mode .nav-controls button { border-color: #444; }
+        body.dark-mode .nav-links button { color: #bbb; }
+        body.dark-mode .nav-links button.active { color: #6fb3ff; border-bottom-color: #6fb3ff; }
         body.dark-mode .icon { fill: #e0e0e0; }
+        .icon { width: 20px; height: 20px; fill: currentColor; }
+        .btn-sm { padding: 5px; border-radius: 5px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: inherit; }
     </style>
 </head>
 <body>
@@ -182,10 +191,10 @@ $userRole = $_SESSION['role'] ?? 'user';
         </div>
 
         <div class="nav-controls">
-            <button class="btn-outline btn-sm" onclick="changeTextSize(-1)" title="Decrease Text Size"><svg class="icon"><use href="#icon-text-down"></use></svg></button>
-            <button class="btn-outline btn-sm" onclick="changeTextSize(1)" title="Increase Text Size"><svg class="icon"><use href="#icon-text-up"></use></svg></button>
-            <button class="btn-outline btn-sm" id="themeBtn" title="Toggle Theme"><svg class="icon"><use href="#icon-sun"></use></svg></button>
-            <button class="btn-outline btn-sm" onclick="logout()" title="Logout"><svg class="icon"><use href="#icon-logout"></use></svg></button>
+            <button onclick="changeTextSize(-1)" title="Decrease Text Size"><svg class="icon"><use href="#icon-text-down"></use></svg></button>
+            <button onclick="changeTextSize(1)" title="Increase Text Size"><svg class="icon"><use href="#icon-text-up"></use></svg></button>
+            <button id="themeBtn" title="Toggle Theme"><svg class="icon"><use href="#icon-sun"></use></svg></button>
+            <button onclick="logout()" title="Logout"><svg class="icon"><use href="#icon-logout"></use></svg></button>
         </div>
     </nav>
 
@@ -561,7 +570,7 @@ async function renderMaster(c) {
     c.innerHTML = `
         <h2>Master List</h2>
         <div class="card" style="margin-bottom: 20px;">
-            <p><small>Add a new medication to the database if it doesn't already exist.</small></p>
+            <p><small>Add a new medication to the database to assign it a unique 2-letter code.</small></p>
             <div style="display:flex; gap:5px; margin-top:10px;">
                 <input type="text" id="newMasterMed" placeholder="New Medication Name">
                 <button class="btn" onclick="addMasterMed()">Add</button>
@@ -583,7 +592,7 @@ async function loadMasterLetter(l) {
     const list = await callApi('get_master', {letter: l});
     document.getElementById('mList').innerHTML = list.length === 0 ? '<p style="padding: 10px;">No medications found.</p>' : list.map(i => `
         <div class="list-item">
-            <div>${e(i.name)}</div>
+            <div><strong style="color:var(--primary); font-family:monospace; margin-right:5px;">[${e(i.prefix)}]</strong>${e(i.name)}</div>
             <button class="btn-sm btn-outline" onclick="delMaster(${i.id}, '${l}')" title="Delete"><svg class="icon"><use href="#icon-trash"></use></svg></button>
         </div>`).join('');
 }

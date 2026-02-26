@@ -36,6 +36,10 @@ ensureColumn($db, 'inventory', 'code');
 ensureColumn($db, 'users', 'share_code');
 ensureColumn($db, 'family_members', 'is_default');
 ensureColumn($db, 'locations', 'is_default');
+ensureColumn($db, 'master_meds', 'prefix'); // New Column for 2-Letter Code
+
+// Auto-fill existing master meds that don't have a prefix yet with 2 random uppercase letters
+@$db->exec("UPDATE master_meds SET prefix = char(abs(random()) % 26 + 65) || char(abs(random()) % 26 + 65) WHERE prefix IS NULL OR prefix = ''");
 
 $SC = $_SESSION['share_code'] ?? 'DEFAULT123';
 $action = $_POST['action'] ?? '';
@@ -87,7 +91,7 @@ switch ($action) {
         $soon = date('Y-m-d', strtotime('+30 days'));
         $list = [];
         
-        // 1. Reorder (from My Meds where stock < 1 AND status is active)
+        // 1. Reorder
         $resMeds = $db->query("SELECT * FROM my_meds WHERE share_code='$SC' AND status='active'");
         while($row = $resMeds->fetchArray(SQLITE3_ASSOC)) {
             $name = $row['name']; $owner = $row['owner'];
@@ -104,7 +108,7 @@ switch ($action) {
             }
         }
         
-        // 2. Expired (Discard)
+        // 2. Expired
         $resExp = $db->query("SELECT * FROM inventory WHERE share_code='$SC' AND (status='in_stock' OR status='in_use') AND expiry_date < '$today'");
         while($r = $resExp->fetchArray(SQLITE3_ASSOC)) { 
             $r['reason'] = 'Expired - Discard'; 
@@ -133,10 +137,23 @@ switch ($action) {
         break;
         
     case 'add_inventory':
-        $code = (string)random_int(10000, 99999);
+        $name = $_POST['name'];
+        
+        // Fetch the 2-letter prefix from master_meds
+        $stmtP = $db->prepare("SELECT prefix FROM master_meds WHERE name = :n");
+        $stmtP->bindValue(':n', $name);
+        $resP = $stmtP->execute()->fetchArray(SQLITE3_ASSOC);
+        
+        // If it exists in master list, use it. Otherwise derive a 2-letter fallback.
+        $prefix = ($resP && !empty($resP['prefix'])) ? $resP['prefix'] : strtoupper(substr($name, 0, 2));
+        if (strlen($prefix) < 2) $prefix = str_pad($prefix, 2, 'X');
+        
+        // Generate the combined Code (e.g., AB-12345)
+        $code = $prefix . '-' . (string)random_int(10000, 99999);
+        
         $stmt = $db->prepare("INSERT INTO inventory (code, name, strength, owner, location, expiry_date, status, share_code) VALUES (:c, :n, :s, :o, :l, :e, 'in_stock', :sc)");
         $stmt->bindValue(':c', $code);
-        $stmt->bindValue(':n', $_POST['name']);
+        $stmt->bindValue(':n', $name);
         $stmt->bindValue(':s', $_POST['strength'] ?? '');
         $stmt->bindValue(':o', $_POST['owner']);
         $stmt->bindValue(':l', $_POST['location']);
@@ -144,7 +161,6 @@ switch ($action) {
         $stmt->bindValue(':sc', $SC);
         $stmt->execute();
         
-        // Automatically reset the "Ordered" status back to Active since the stock has arrived
         $stmtReset = $db->prepare("UPDATE my_meds SET status='active' WHERE name=:n AND owner=:o AND share_code=:sc");
         $stmtReset->bindValue(':n', $_POST['name']);
         $stmtReset->bindValue(':o', $_POST['owner']);
@@ -217,9 +233,19 @@ switch ($action) {
         break;
 
     case 'add_master':
-        $stmt = $db->prepare("INSERT INTO master_meds (name) VALUES (:n)");
+        $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $prefix = $chars[random_int(0,25)] . $chars[random_int(0,25)];
+        
+        // Ensure 2-letter prefix is unique in the database
+        while($db->querySingle("SELECT count(*) FROM master_meds WHERE prefix='$prefix'") > 0) {
+            $prefix = $chars[random_int(0,25)] . $chars[random_int(0,25)];
+        }
+        
+        $stmt = $db->prepare("INSERT INTO master_meds (name, prefix) VALUES (:n, :p)");
         $stmt->bindValue(':n', trim($_POST['name']));
-        $stmt->execute(); echo json_encode(['status'=>'success']);
+        $stmt->bindValue(':p', $prefix);
+        $stmt->execute(); 
+        echo json_encode(['status'=>'success']);
         break;
 
     case 'delete_master':
